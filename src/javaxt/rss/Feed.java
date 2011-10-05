@@ -74,8 +74,14 @@ public class Feed {
              }
 
              if (nodeName.equalsIgnoreCase("lastBuildDate")){
-                 if (nodeValue!=null) lastUpdate = new javaxt.utils.Date(nodeValue);
-                 if (lastUpdate.failedToParse()) lastUpdate = null;
+                 if (nodeValue!=null){
+                     try{
+                         lastUpdate = new javaxt.utils.Date(nodeValue);
+                     }
+                     catch(java.text.ParseException e){
+                         lastUpdate = null;
+                     }
+                 }
              }
 
              if (nodeName.equals("ttl")){

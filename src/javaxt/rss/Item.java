@@ -1,11 +1,8 @@
 package javaxt.rss;
-
-import java.util.ArrayList;
 import org.w3c.dom.*;
 import javaxt.xml.DOM;
 import javaxt.geospatial.geometry.Geometry;
 import javaxt.geospatial.coordinate.Parser;
-
 
 //******************************************************************************
 //**  RSS Item
@@ -130,7 +127,14 @@ public class Item {
     public javaxt.utils.Date getDate(){
         String date = pubDate;
         if (date.length()==0) date = dcDate;
-        if (date.length()>0) return new javaxt.utils.Date(date);
+        if (date.length()>0){
+            try{
+                return new javaxt.utils.Date(date);
+            }
+            catch(java.text.ParseException e){
+                return null;
+            }
+        }
         else return null;
     }
 
