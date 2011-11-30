@@ -2,8 +2,8 @@ package javaxt.rss;
 
 import org.w3c.dom.*;
 import javaxt.xml.DOM;
-import javaxt.geospatial.geometry.Geometry;
-import javaxt.geospatial.coordinate.Parser;
+//import javaxt.geospatial.geometry.Geometry;
+//import javaxt.geospatial.coordinate.Parser;
 
 //******************************************************************************
 //**  RSS Feed
@@ -19,7 +19,7 @@ public class Feed {
     private String title = "";
     private String description = "";
     private java.net.URL link = null;
-    private Geometry geometry = null;
+    private Object geometry = null;
 
     private javaxt.utils.Date lastUpdate = null;
     private Integer interval = null;
@@ -50,7 +50,14 @@ public class Feed {
                  nodeName.equals("polygon") || nodeName.equals("georss:polygon") ||
                  nodeName.equals("box") || nodeName.equals("georss:box")){
                  try{
-                     geometry = new Parser(nodeValue).getGeometry();
+                     //geometry = new Parser(nodeValue).getGeometry();
+
+                    Class classToLoad = Class.forName("javaxt.geospatial.coordinate.Parser");//, true, child);
+                    java.lang.reflect.Constructor constructor = classToLoad.getDeclaredConstructor(new Class[] {String.class});
+                    java.lang.reflect.Method method = classToLoad.getDeclaredMethod ("getGeometry");
+                    Object instance = constructor.newInstance();
+                    geometry = method.invoke(instance);
+
                  }
                  catch(Exception e){}
              }
@@ -108,7 +115,7 @@ public class Feed {
     public String getDescription(){ return description; }
     public java.net.URL getLink(){ return link; }
     public Item[] getItems(){ return Items; }
-    public Geometry getLocation(){ return geometry; }
+    public Object getLocation(){ return geometry; }
 
     public javaxt.utils.Date getLastUpdate(){
         return lastUpdate;

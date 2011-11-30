@@ -1,8 +1,8 @@
 package javaxt.rss;
 import org.w3c.dom.*;
 import javaxt.xml.DOM;
-import javaxt.geospatial.geometry.Geometry;
-import javaxt.geospatial.coordinate.Parser;
+//import javaxt.geospatial.geometry.Geometry;
+//import javaxt.geospatial.coordinate.Parser;
 
 //******************************************************************************
 //**  RSS Item
@@ -21,7 +21,7 @@ public class Item {
     private String creator = null;
     private java.net.URL link = null;
     private java.net.URL origLink = null; //<--FeedBurner
-    private Geometry geometry = null;   
+    private Object geometry = null;
     private NodeList nodeList = null;
 
     private String pubDate = null;
@@ -81,7 +81,12 @@ public class Item {
                  nodeName.equals("polygon") || nodeName.equals("georss:polygon") ||
                  nodeName.equals("box") || nodeName.equals("georss:box")){
                  try{
-                     geometry = new Parser(nodeValue).getGeometry();
+                     //geometry = new Parser(nodeValue).getGeometry();
+                    Class classToLoad = Class.forName("javaxt.geospatial.coordinate.Parser");//, true, child);
+                    java.lang.reflect.Constructor constructor = classToLoad.getDeclaredConstructor(new Class[] {String.class});
+                    java.lang.reflect.Method method = classToLoad.getDeclaredMethod ("getGeometry");
+                    Object instance = constructor.newInstance();
+                    geometry = method.invoke(instance);
                  }
                  catch(Exception e){}
              }
@@ -154,7 +159,7 @@ public class Item {
   //**************************************************************************
   /**  Returns a geometry associated with the current entry.
    */
-    public Geometry getLocation(){ return geometry; }
+    public Object getLocation(){ return geometry; }
 
 
     
@@ -175,8 +180,8 @@ public class Item {
         
         if (geometry!=null){
             out.append("Location: " + geometry + br);
-            out.append("Geometry Name: " + geometry.getName() + br);
-            out.append("Geometry SRS: " + geometry.getSRS() + br);
+            //out.append("Geometry Name: " + geometry.getName() + br);
+            //out.append("Geometry SRS: " + geometry.getSRS() + br);
         }
 
         for (int i=0; i<media.size(); i++){
