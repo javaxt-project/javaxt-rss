@@ -44,22 +44,22 @@ public class Feed {
              if (nodeName.equals("description") || nodeName.equals("subtitle")){
                  description = nodeValue;
              }
-             if (nodeName.equals("where") || nodeName.equals("georss:where") || 
-                 nodeName.equals("point") || nodeName.equals("georss:point") ||
-                 nodeName.equals("line") || nodeName.equals("georss:line") ||
-                 nodeName.equals("polygon") || nodeName.equals("georss:polygon") ||
-                 nodeName.equals("box") || nodeName.equals("georss:box")){
-                 try{
-                     //geometry = new Parser(nodeValue).getGeometry();
 
-                    Class classToLoad = Class.forName("javaxt.geospatial.coordinate.Parser");//, true, child);
-                    java.lang.reflect.Constructor constructor = classToLoad.getDeclaredConstructor(new Class[] {String.class});
-                    java.lang.reflect.Method method = classToLoad.getDeclaredMethod ("getGeometry");
-                    Object instance = constructor.newInstance();
-                    geometry = method.invoke(instance);
 
+           //Parse Location Information (GeoRSS)
+             if (nodeName.equals("where") || nodeName.equals("georss:where")){
+                 NodeList nodes = node.getChildNodes();
+                 for (int j=0; j<nodes.getLength(); j++){
+                     if (nodes.item(j).getNodeType()==1){
+                         if (Item.isGeometryNode(nodes.item(j).getNodeName().toLowerCase())){
+                             geometry = Item.getGeometry(DOM.getNodeValue(nodes.item(j)).trim());
+                             if (geometry!=null) break;
+                         }
+                     }
                  }
-                 catch(Exception e){}
+             }
+             if (Item.isGeometryNode(nodeName)){
+                 geometry = Item.getGeometry(nodeValue);
              }
 
 

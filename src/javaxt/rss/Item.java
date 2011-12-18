@@ -75,20 +75,19 @@ public class Item {
 
 
            //Parse Location Information (GeoRSS)
-             if (nodeName.equals("where") || nodeName.equals("georss:where") || 
-                 nodeName.equals("point") || nodeName.equals("georss:point") ||
-                 nodeName.equals("line") || nodeName.equals("georss:line") ||
-                 nodeName.equals("polygon") || nodeName.equals("georss:polygon") ||
-                 nodeName.equals("box") || nodeName.equals("georss:box")){
-                 try{
-                     //geometry = new Parser(nodeValue).getGeometry();
-                    Class classToLoad = Class.forName("javaxt.geospatial.coordinate.Parser");//, true, child);
-                    java.lang.reflect.Constructor constructor = classToLoad.getDeclaredConstructor(new Class[] {String.class});
-                    java.lang.reflect.Method method = classToLoad.getDeclaredMethod ("getGeometry");
-                    Object instance = constructor.newInstance();
-                    geometry = method.invoke(instance);
+             if (nodeName.equals("where") || nodeName.equals("georss:where")){
+                 NodeList nodes = node.getChildNodes();
+                 for (int j=0; j<nodes.getLength(); j++){
+                     if (nodes.item(j).getNodeType()==1){
+                         if (isGeometryNode(nodes.item(j).getNodeName().toLowerCase())){
+                             geometry = getGeometry(DOM.getNodeValue(nodes.item(j)).trim());
+                             if (geometry!=null) break;
+                         }
+                     }
                  }
-                 catch(Exception e){}
+             }
+             if (isGeometryNode(nodeName)){
+                 geometry = getGeometry(nodeValue);
              }
 
 
@@ -96,6 +95,39 @@ public class Item {
                  media.add(new Media(node));
              }
         }
+    }
+
+
+    protected static boolean isGeometryNode(String nodeName){
+        String namespace = null;
+        if (nodeName.contains(":")){
+            namespace = nodeName.substring(0, nodeName.lastIndexOf(":"));
+            nodeName = nodeName.substring(nodeName.lastIndexOf(":")+1);
+        }
+        if (namespace==null || namespace.equals("gml") || namespace.equals("georss"))
+            return
+               (nodeName.equals("point") || nodeName.equals("multipoint") ||
+                nodeName.equals("line") ||
+                nodeName.equals("linestring") || nodeName.equals("multilinestring") ||
+                nodeName.equals("polygon") || nodeName.equals("multipolygon") ||
+                nodeName.equals("box") || nodeName.equals("envelope"));
+        else return false;
+    }
+
+    
+    protected static Object getGeometry(String nodeValue){
+         try{
+             //geometry = new Parser(nodeValue).getGeometry();
+            Class classToLoad = Class.forName("javaxt.geospatial.coordinate.Parser");
+            java.lang.reflect.Constructor constructor = classToLoad.getDeclaredConstructor(new Class[] {String.class});
+            java.lang.reflect.Method method = classToLoad.getDeclaredMethod("getGeometry");
+            Object instance = constructor.newInstance(new Object[] { nodeValue });
+            return method.invoke(instance);
+         }
+         catch(Exception e){
+             //e.printStackTrace();
+             return null;
+         }
     }
 
 

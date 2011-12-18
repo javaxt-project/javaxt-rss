@@ -1,5 +1,4 @@
 package javaxt.rss;
-
 import org.w3c.dom.*;
 import javaxt.xml.DOM;
 
