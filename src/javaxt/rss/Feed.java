@@ -1,9 +1,5 @@
 package javaxt.rss;
-
 import org.w3c.dom.*;
-import javaxt.xml.DOM;
-//import javaxt.geospatial.geometry.Geometry;
-//import javaxt.geospatial.coordinate.Parser;
 
 //******************************************************************************
 //**  RSS Feed
@@ -21,7 +17,7 @@ public class Feed {
     private java.net.URL link = null;
     private Object geometry = null;
 
-    private javaxt.utils.Date lastUpdate = null;
+    private java.util.Date lastUpdate = null;
     private Integer interval = null;
     
     private Item[] Items = null;
@@ -33,82 +29,75 @@ public class Feed {
   /** Creates a new instance of Feed */
     
     protected Feed(org.w3c.dom.Node node) {
-        java.util.Vector vec = new java.util.Vector();
+        java.util.ArrayList<Item> items = new java.util.ArrayList<Item>();
         NodeList nodeList = node.getChildNodes();
         for (int i=0; i<nodeList.getLength(); i++){
-             node = nodeList.item(i);
-             String nodeName = node.getNodeName().toLowerCase();
-             String nodeValue = DOM.getNodeValue(node);
-             //System.out.println(nodeName + ": " + nodeValue);
-             if (nodeName.equals("title")) title = nodeValue;
-             if (nodeName.equals("description") || nodeName.equals("subtitle")){
-                 description = nodeValue;
-             }
+            node = nodeList.item(i);
+            if (node.getNodeType()==1){
+                String nodeName = node.getNodeName().toLowerCase();
+                String nodeValue = Parser.getNodeValue(node).trim();
+                if (nodeName.equals("title")) title = nodeValue;
+                if (nodeName.equals("description") || nodeName.equals("subtitle")){
+                    description = nodeValue;
+                }
 
 
-           //Parse Location Information (GeoRSS)
-             if (nodeName.equals("where") || nodeName.equals("georss:where")){
-                 NodeList nodes = node.getChildNodes();
-                 for (int j=0; j<nodes.getLength(); j++){
-                     if (nodes.item(j).getNodeType()==1){
-                         if (Item.isGeometryNode(nodes.item(j).getNodeName().toLowerCase())){
-                             geometry = Item.getGeometry(DOM.getNodeValue(nodes.item(j)).trim());
-                             if (geometry!=null) break;
-                         }
-                     }
-                 }
-             }
-             if (Item.isGeometryNode(nodeName)){
-                 geometry = Item.getGeometry(nodeValue);
-             }
+                //Parse Location Information (GeoRSS)
+                if (nodeName.equals("where") || nodeName.equals("georss:where")){
+                    NodeList nodes = node.getChildNodes();
+                    for (int j=0; j<nodes.getLength(); j++){
+                        if (nodes.item(j).getNodeType()==1){
+                            if (Item.isGeometryNode(nodes.item(j).getNodeName().toLowerCase())){
+                                geometry = Item.getGeometry(Parser.getNodeValue(nodes.item(j)).trim());
+                                if (geometry!=null) break;
+                            }
+                        }
+                    }
+                }
+                if (Item.isGeometryNode(nodeName)){
+                    geometry = Item.getGeometry(nodeValue);
+                }
 
 
-             if (nodeName.equals("link")){
-                 String url = nodeValue.trim();
-                 if (url.length()==0){
-                     //get href attribute
-                 }
-                 try{
-                     link = new java.net.URL(url);
-                 }
-                 catch(Exception e){}
-             }
-             
+                if (nodeName.equals("link")){
+                    String url = nodeValue.trim();
+                    if (url.length()==0){
+                    //get href attribute
+                    }
+                    try{
+                        link = new java.net.URL(url);
+                    }
+                    catch(Exception e){}
+                }
 
 
-             if (nodeName.equals("item") || nodeName.equals("entry")){
-                 vec.add(new Item(node));
-             }
 
-             if (nodeName.equalsIgnoreCase("lastBuildDate")){
-                 if (nodeValue!=null){
-                     try{
-                         lastUpdate = new javaxt.utils.Date(nodeValue);
-                     }
-                     catch(java.text.ParseException e){
-                         lastUpdate = null;
-                     }
-                 }
-             }
+                if (nodeName.equals("item") || nodeName.equals("entry")){
+                    items.add(new Item(node));
+                }
 
-             if (nodeName.equals("ttl")){
-                 try{
-                     interval = javaxt.utils.string.toInt(nodeValue);
-                 }
-                 catch(Exception e){
-                 }
-             }
-             
+                if (nodeName.equalsIgnoreCase("lastBuildDate")){
+                    if (nodeValue!=null){
+                        try{
+                            lastUpdate = Parser.getDate(nodeValue);
+                        }
+                        catch(java.text.ParseException e){
+                            lastUpdate = null;
+                        }
+                    }
+                }
+
+                if (nodeName.equals("ttl")){
+                    try{
+                        interval = Integer.parseInt(nodeValue);
+                    }
+                    catch(Exception e){
+                    }
+                }
+            }
         }
-        
-        
-      //Convert Vector to Array
-        Object[] arr = vec.toArray();
-        Items = new Item[arr.length];
-        for (int i=0; i<Items.length; i++){
-             Items[i] = (Item) arr[i];
-        }
-        
+
+        this.Items = items.toArray(new Item[items.size()]);
     }
     
     public String getTitle(){ return title; }
@@ -117,7 +106,7 @@ public class Feed {
     public Item[] getItems(){ return Items; }
     public Object getLocation(){ return geometry; }
 
-    public javaxt.utils.Date getLastUpdate(){
+    public java.util.Date getLastUpdate(){
         return lastUpdate;
     }
     

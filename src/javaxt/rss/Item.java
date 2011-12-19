@@ -1,8 +1,5 @@
 package javaxt.rss;
 import org.w3c.dom.*;
-import javaxt.xml.DOM;
-//import javaxt.geospatial.geometry.Geometry;
-//import javaxt.geospatial.coordinate.Parser;
 
 //******************************************************************************
 //**  RSS Item
@@ -34,66 +31,68 @@ public class Item {
     protected Item(org.w3c.dom.Node node) {
         nodeList = node.getChildNodes();
         for (int i=0; i<nodeList.getLength(); i++){
-             node = nodeList.item(i);
-             String nodeName = node.getNodeName().toLowerCase();
-             String nodeValue = DOM.getNodeValue(node).trim();
-             if (nodeName.equals("title")) title = nodeValue;
+            node = nodeList.item(i);
+            if (node.getNodeType()==1){
+                String nodeName = node.getNodeName().toLowerCase();
+                String nodeValue = Parser.getNodeValue(node).trim();
+                if (nodeName.equals("title")) title = nodeValue;
 
-           //Parse Description
-             if (nodeName.equals("description") || nodeName.equals("subtitle")){
-                 if (description==null || description.length()==0){
-                     description = nodeValue;
-                 }
-             }
+                //Parse Description
+                if (nodeName.equals("description") || nodeName.equals("subtitle")){
+                    if (description==null || description.length()==0){
+                        description = nodeValue;
+                    }
+                }
 
-           //Parse Link
-             if (nodeName.equals("link")){
-                 String url = nodeValue;
-                 if (url.length()==0){
-                     //get href attribute
-                     url = DOM.getAttributeValue(node,"href").trim();
-                 }
-                 if (url.length()>0){
-                     try{ link = new java.net.URL(url); }
-                     catch(Exception e){}
-                 }
-             }
+                //Parse Link
+                if (nodeName.equals("link")){
+                    String url = nodeValue;
+                    if (url.length()==0){
+                      //get href attribute
+                        url = Parser.getAttributeValue(node,"href").trim();
+                    }
+                    if (url.length()>0){
+                       try{ link = new java.net.URL(url); }
+                       catch(Exception e){}
+                    }
+                }
 
-           //Parse FeedBurner Link
-             if (nodeName.equals("feedburner:origLink")){
-                 String url = nodeValue.trim();
-                 if (url.length()>0){
-                     try{ origLink = new java.net.URL(url); }
-                     catch(Exception e){}
-                 }
-             }
+                //Parse FeedBurner Link
+                if (nodeName.equals("feedburner:origLink")){
+                    String url = nodeValue.trim();
+                    if (url.length()>0){
+                        try{ origLink = new java.net.URL(url); }
+                        catch(Exception e){}
+                    }
+                }
 
-             if (nodeName.equals("author")) author = nodeValue;
-             if (nodeName.endsWith("creator")) creator = nodeValue;
-             if (nodeName.equalsIgnoreCase("pubDate")) pubDate = nodeValue;
-             if (nodeName.equalsIgnoreCase("dc:date")) dcDate = nodeValue;
-
-
-           //Parse Location Information (GeoRSS)
-             if (nodeName.equals("where") || nodeName.equals("georss:where")){
-                 NodeList nodes = node.getChildNodes();
-                 for (int j=0; j<nodes.getLength(); j++){
-                     if (nodes.item(j).getNodeType()==1){
-                         if (isGeometryNode(nodes.item(j).getNodeName().toLowerCase())){
-                             geometry = getGeometry(DOM.getNodeValue(nodes.item(j)).trim());
-                             if (geometry!=null) break;
-                         }
-                     }
-                 }
-             }
-             if (isGeometryNode(nodeName)){
-                 geometry = getGeometry(nodeValue);
-             }
+                if (nodeName.equals("author")) author = nodeValue;
+                if (nodeName.endsWith("creator")) creator = nodeValue;
+                if (nodeName.equalsIgnoreCase("pubDate")) pubDate = nodeValue;
+                if (nodeName.equalsIgnoreCase("dc:date")) dcDate = nodeValue;
 
 
-             if (nodeName.startsWith("media:")){
-                 media.add(new Media(node));
-             }
+                //Parse Location Information (GeoRSS)
+                if (nodeName.equals("where") || nodeName.equals("georss:where")){
+                    NodeList nodes = node.getChildNodes();
+                    for (int j=0; j<nodes.getLength(); j++){
+                        if (nodes.item(j).getNodeType()==1){
+                            if (isGeometryNode(nodes.item(j).getNodeName().toLowerCase())){
+                                geometry = getGeometry(Parser.getNodeValue(nodes.item(j)).trim());
+                                if (geometry!=null) break;
+                            }
+                        }
+                    }
+                }
+                if (isGeometryNode(nodeName)){
+                    geometry = getGeometry(nodeValue);
+                }
+
+
+                if (nodeName.startsWith("media:")){
+                    media.add(new Media(node));
+                }
+            }
         }
     }
 
@@ -161,12 +160,12 @@ public class Item {
   /**  Return the date/time stamp associated with the current entry. Uses the
    *   pubDate if it exists. Otherwise, returns dc:date
    */
-    public javaxt.utils.Date getDate(){
+    public java.util.Date getDate(){
         String date = pubDate;
         if (date.length()==0) date = dcDate;
         if (date.length()>0){
             try{
-                return new javaxt.utils.Date(date);
+                return Parser.getDate(date);
             }
             catch(java.text.ParseException e){
                 return null;

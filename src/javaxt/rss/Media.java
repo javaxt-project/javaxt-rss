@@ -1,5 +1,4 @@
 package javaxt.rss;
-import javaxt.xml.DOM;
 
 //******************************************************************************
 //**  Media Class
@@ -24,10 +23,10 @@ public class Media {
   /** Creates a new instance of Media. */
 
     protected Media(org.w3c.dom.Node node) {
-        type = DOM.getAttributeValue(node,"type").trim();
+        type = Parser.getAttributeValue(node,"type").trim();
 
       //Parse url
-        String link = DOM.getAttributeValue(node,"url").trim();
+        String link = Parser.getAttributeValue(node,"url").trim();
         if (link.length()>0){
             try{ url = new java.net.URL(link); }
             catch(Exception e){}
@@ -39,10 +38,10 @@ public class Media {
             if (node.getNodeType()==1){
                 String nodeName = node.getNodeName();
                 if (nodeName.endsWith("credit")){
-                    credit = DOM.getNodeValue(node).trim();
+                    credit = Parser.getNodeValue(node).trim();
                 }
                 else if (nodeName.endsWith("description")){
-                    description = DOM.getNodeValue(node).trim();
+                    description = Parser.getNodeValue(node).trim();
                 }
             }
         }
