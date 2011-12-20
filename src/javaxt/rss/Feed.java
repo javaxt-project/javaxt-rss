@@ -15,7 +15,7 @@ public class Feed {
     private String title = "";
     private String description = "";
     private java.net.URL link = null;
-    private Object geometry = null;
+    private Location location = null;
 
     private java.util.Date lastUpdate = null;
     private Integer interval = null;
@@ -37,29 +37,19 @@ public class Feed {
                 String nodeName = node.getNodeName().toLowerCase();
                 String nodeValue = Parser.getNodeValue(node).trim();
                 if (nodeName.equals("title")) title = nodeValue;
-                if (nodeName.equals("description") || nodeName.equals("subtitle")){
+                else if(nodeName.equals("description") || nodeName.equals("subtitle")){
                     description = nodeValue;
                 }
 
 
-                //Parse Location Information (GeoRSS)
-                if (nodeName.equals("where") || nodeName.equals("georss:where")){
-                    NodeList nodes = node.getChildNodes();
-                    for (int j=0; j<nodes.getLength(); j++){
-                        if (nodes.item(j).getNodeType()==1){
-                            if (Item.isGeometryNode(nodes.item(j).getNodeName().toLowerCase())){
-                                geometry = Item.getGeometry(Parser.getNodeValue(nodes.item(j)).trim());
-                                if (geometry!=null) break;
-                            }
-                        }
-                    }
-                }
-                if (Item.isGeometryNode(nodeName)){
-                    geometry = Item.getGeometry(nodeValue);
+              //Parse Location Information (GeoRSS)
+                else if(Location.isLocationNode(nodeName)){
+                    location = new Location(node);
                 }
 
+                
 
-                if (nodeName.equals("link")){
+                else if(nodeName.equals("link")){
                     String url = nodeValue.trim();
                     if (url.length()==0){
                     //get href attribute
@@ -72,22 +62,20 @@ public class Feed {
 
 
 
-                if (nodeName.equals("item") || nodeName.equals("entry")){
+                else if (nodeName.equals("item") || nodeName.equals("entry")){
                     items.add(new Item(node));
                 }
 
-                if (nodeName.equalsIgnoreCase("lastBuildDate")){
-                    if (nodeValue!=null){
-                        try{
-                            lastUpdate = Parser.getDate(nodeValue);
-                        }
-                        catch(java.text.ParseException e){
-                            lastUpdate = null;
-                        }
+                else if (nodeName.equalsIgnoreCase("lastBuildDate")){ //pubDate?
+                    try{
+                        lastUpdate = Parser.getDate(nodeValue);
+                    }
+                    catch(java.text.ParseException e){
                     }
                 }
 
-                if (nodeName.equals("ttl")){
+
+                else if (nodeName.equals("ttl")){
                     try{
                         interval = Integer.parseInt(nodeValue);
                     }
@@ -104,7 +92,17 @@ public class Feed {
     public String getDescription(){ return description; }
     public java.net.URL getLink(){ return link; }
     public Item[] getItems(){ return Items; }
-    public Object getLocation(){ return geometry; }
+
+    
+  //**************************************************************************
+  //** getLocation
+  //**************************************************************************
+  /** Returns location information associated with the current entry (e.g.
+   *  GeoRSS element).
+   */
+    public Location getLocation(){
+        return location;
+    }
 
     public java.util.Date getLastUpdate(){
         return lastUpdate;
@@ -129,8 +127,8 @@ public class Feed {
         out.append("Description: " + getDescription() + br);
         out.append("Last Update: " + getLastUpdate() + br);
         out.append("Link: " + getLink() + br);
-        if (geometry!=null){
-            out.append("Location: " + geometry + br);
+        if (location!=null){
+            out.append("Location: " + location.toWKT() + br);
         }
         return out.toString();
     }

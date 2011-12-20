@@ -44,16 +44,6 @@ public class Parser {
 
 
   //**************************************************************************
-  //** Constructor
-  //**************************************************************************
-  /** Creates a new instance of the RSS Parser */
-/*
-    public Parser(String url) {
-        this(new javaxt.http.Request(url).getResponse().getXML());
-    }
-*/
-    
-  //**************************************************************************
   //** getFeeds
   //**************************************************************************
   /** Returns an array of "feeds". A "feed" in RSS is a called a "channel" */
@@ -63,7 +53,8 @@ public class Parser {
     }
 
 
-// <editor-fold defaultstate="collapsed" desc="XML and Date parsing copied from javaxt-core.">
+
+// <editor-fold defaultstate="collapsed" desc="XML and Date utilities copied from javaxt-core.">
 
 
   //**************************************************************************
@@ -72,7 +63,7 @@ public class Parser {
   /** Returns the outer node for a given xml document.
    *  @param xml A org.w3c.dom.Document
    */
-    private Node getOuterNode(Document xml){
+    protected static Node getOuterNode(Document xml){
         if (xml==null) return null;
         NodeList OuterNodes = xml.getChildNodes();
         for (int i=0; i<OuterNodes.getLength(); i++ ) {
@@ -102,7 +93,7 @@ public class Parser {
         }
         return "";
     }
-    
+
 
   //**************************************************************************
   //** getNodeValue
@@ -157,13 +148,13 @@ public class Parser {
             xmlTree.append("</" + tree.getNodeName() + ">");
         }
     }
-    
+
   //**************************************************************************
   //** getAttributes
   //**************************************************************************
   /** Used to retrieve all of the attributes for a given node.   */
 
-    private static String getAttributes(Node node){
+    protected static String getAttributes(Node node){
         if (node==null) return "";
         NamedNodeMap attr = node.getAttributes();
         String Attributes = "";
@@ -198,7 +189,7 @@ public class Parser {
         return false;
     }
 
-    
+
     private static String[] SupportedFormats = new String[] {
 
          "EEE, d MMM yyyy HH:mm:ss z",  // Mon, 7 Jun 1976 13:02:09 EST
@@ -257,9 +248,9 @@ public class Parser {
     };
 
   //**************************************************************************
-  //** Constructor
+  //** getDate
   //**************************************************************************
-  /**  Creates a new instance of date using a String representation of a date.
+  /**  Used to convert a string to a date
    */
     protected static java.util.Date getDate(String date) throws java.text.ParseException {
 
@@ -297,7 +288,7 @@ public class Parser {
         throw new java.text.ParseException("Failed to parse date: " + date, 0);
 
     }
-    
+
   //**************************************************************************
   //** ParseDate
   //**************************************************************************
