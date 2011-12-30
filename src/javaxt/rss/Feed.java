@@ -20,16 +20,16 @@ public class Feed {
     private java.util.Date lastUpdate = null;
     private Integer interval = null;
     
-    private Item[] Items = null;
+    private java.util.ArrayList<Item> items = new java.util.ArrayList<Item>();
 
     
   //**************************************************************************
-  //** Instantiate Feed
+  //** Constructor
   //**************************************************************************
-  /** Creates a new instance of Feed */
+  /** Creates a new instance of this class using an XML node. */
     
-    protected Feed(org.w3c.dom.Node node) {
-        java.util.ArrayList<Item> items = new java.util.ArrayList<Item>();
+    protected Feed(org.w3c.dom.Node node, java.util.HashMap<String, String> namespaces) {
+        //java.util.ArrayList<Item> items = new java.util.ArrayList<Item>();
         NodeList nodeList = node.getChildNodes();
         for (int i=0; i<nodeList.getLength(); i++){
             node = nodeList.item(i);
@@ -43,16 +43,14 @@ public class Feed {
 
 
               //Parse Location Information (GeoRSS)
-                else if(Location.isLocationNode(nodeName)){
-                    location = new Location(node);
+                else if (Location.isLocationNode(nodeName, namespaces)){
+                    location = new Location(node, namespaces);
                 }
-
                 
-
-                else if(nodeName.equals("link")){
+                else if (nodeName.equals("link")){
                     String url = nodeValue.trim();
                     if (url.length()==0){
-                    //get href attribute
+                        //get href attribute?
                     }
                     try{
                         link = new java.net.URL(url);
@@ -60,12 +58,9 @@ public class Feed {
                     catch(Exception e){}
                 }
 
-
-
                 else if (nodeName.equals("item") || nodeName.equals("entry")){
-                    items.add(new Item(node));
+                    items.add(new Item(node, namespaces));
                 }
-
                 else if (nodeName.equalsIgnoreCase("lastBuildDate")){ //pubDate?
                     try{
                         lastUpdate = Parser.getDate(nodeValue);
@@ -73,8 +68,6 @@ public class Feed {
                     catch(java.text.ParseException e){
                     }
                 }
-
-
                 else if (nodeName.equals("ttl")){
                     try{
                         interval = Integer.parseInt(nodeValue);
@@ -85,19 +78,27 @@ public class Feed {
             }
         }
 
-        this.Items = items.toArray(new Item[items.size()]);
     }
     
     public String getTitle(){ return title; }
     public String getDescription(){ return description; }
     public java.net.URL getLink(){ return link; }
-    public Item[] getItems(){ return Items; }
+
+    
+  //**************************************************************************
+  //** getItems
+  //**************************************************************************
+  /** Returns a list of items found in an RSS feed. */
+    
+    public Item[] getItems(){ 
+        return items.toArray(new Item[items.size()]);
+    }
 
     
   //**************************************************************************
   //** getLocation
   //**************************************************************************
-  /** Returns location information associated with the current entry (e.g.
+  /** Returns location information associated with the current feed (e.g.
    *  GeoRSS element).
    */
     public Location getLocation(){

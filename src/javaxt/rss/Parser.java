@@ -11,7 +11,7 @@ import org.w3c.dom.*;
 
 public class Parser {
     
-    private Feed[] Feeds = null;
+    private Feed[] feeds = null;
     
     
   //**************************************************************************
@@ -20,25 +20,42 @@ public class Parser {
   /** Creates a new instance of the RSS Parser */
     
     public Parser(org.w3c.dom.Document doc) {
-      //Get Root Node
+      
         Node node = getOuterNode(doc);
         String nodeName = node.getNodeName();
+
+      //Get namespaces
+        java.util.HashMap<String, String> namespaces = new java.util.HashMap<String, String>();
+        NamedNodeMap attributes = node.getAttributes();
+        for (int i=0; i<attributes.getLength(); i++){
+            Node attr = attributes.item(i);
+            String attrName = attr.getNodeName();
+            if (attrName.startsWith("xmlns:")){
+                attrName = attrName.substring(attrName.indexOf(":")+1);
+                String attrValue = attr.getNodeValue(); 
+                if (attrValue!=null){
+                    if (attrValue.endsWith("/")) attrValue = attrValue.substring(0, attrValue.length()-1);
+                    namespaces.put(attrValue.toLowerCase(), attrName);
+                }
+            }
+        }
+
         
         java.util.ArrayList<Feed> feeds = new java.util.ArrayList<Feed>();
         if (nodeName.equals("rss")){
             NodeList Channels = doc.getElementsByTagName("channel");
             for (int i=0; i<Channels.getLength(); i++){
-                 feeds.add(new Feed(Channels.item(i)));
+                 feeds.add(new Feed(Channels.item(i), namespaces));
             }
         }
         else if (nodeName.equals("feed")){
-            feeds.add(new Feed(node));
+            feeds.add(new Feed(node, namespaces));
         }
         else{
             //throw an error?
         }
 
-        this.Feeds = feeds.toArray(new Feed[feeds.size()]);
+        this.feeds = feeds.toArray(new Feed[feeds.size()]);
         
     }
 
@@ -49,7 +66,7 @@ public class Parser {
   /** Returns an array of "feeds". A "feed" in RSS is a called a "channel" */
 
     public Feed[] getFeeds(){
-        return Feeds;
+        return feeds;
     }
 
 
@@ -191,6 +208,8 @@ public class Parser {
 
 
     private static String[] SupportedFormats = new String[] {
+
+         "EEE, d MMM yy HH:mm:ss z",   // Mon, 07 Jun 76 13:02:09 EST
 
          "EEE, d MMM yyyy HH:mm:ss z",  // Mon, 7 Jun 1976 13:02:09 EST
          "EEE, dd MMM yyyy HH:mm:ss z", // Mon, 07 Jun 1976 13:02:09 EST

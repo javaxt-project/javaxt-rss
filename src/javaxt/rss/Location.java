@@ -5,7 +5,8 @@ import org.w3c.dom.*;
 //**  Location Class
 //******************************************************************************
 /**
- *   Enter class description here
+ *   Used to represent a location information associated with an RSS feed or
+ *   entry. Supports GeoRSS and W3C Basic Geometry.
  *
  ******************************************************************************/
 
@@ -22,24 +23,39 @@ public class Location {
         "MultiPoint", "MultiLine", "MultiPolygon", "MultiLineString"
     };
 
+    /** GeoRSS NameSpace */
+    private String georss = "georss";
+
+    /** GML NameSpace */
+    private String gml = "gml";
+
+
   //**************************************************************************
   //** Constructor
   //**************************************************************************
-  /** Creates a new instance of Location. */
+  /** Creates a new instance of this class using an XML node. */
 
-    protected Location(org.w3c.dom.Node node) {
+    protected Location(org.w3c.dom.Node node, java.util.HashMap<String, String> namespaces) {
         this.node = node;
+
+        String georss = namespaces.get("http://www.georss.org/georss");
+        if (georss!=null) this.georss = georss;
+
+        String gml = namespaces.get("http://www.opengis.net/gml");
+        if (gml==null) this.gml = gml;
     }
+
+    
+  //**************************************************************************
+  //** Constructor
+  //**************************************************************************
+  /** Creates a new instance of this class using a point. */
 
     protected Location(String lat, String lon){
         this.lat = lat;
         this.lon = lon;
     }
 
-    protected static boolean isLocationNode(String nodeName){
-        return (nodeName.equals("where") || nodeName.equals("georss:where") ||
-            isGeometryNode(nodeName));
-    }
 
     /*
     public String toGML(){
@@ -50,8 +66,8 @@ public class Location {
   //**************************************************************************
   //** toWKT
   //**************************************************************************
-  /**  Used to return a Well-known Text (WKT) representation of the point. */
-
+  /**  Used to return a Well-known Text (WKT) representation of the location.
+   */
     public String toWKT(){
         if (lat!=null && lon!=null){
             return "POINT(" + lon + " " + lat + ")";
@@ -62,22 +78,18 @@ public class Location {
   //**************************************************************************
   //** toString
   //**************************************************************************
-  /**  Used to return a Well-known Text (WKT) representation of the point. */
-
+  /**  Used to return a Well-known Text (WKT) representation of the location.
+   */
     public String toString(){
         return toWKT();
     }
 
 
-    public Node getNode(){
-        return node;
-    }
-
 
   //**************************************************************************
   //** getGeometry
   //**************************************************************************
-  /** Used convert the location node into a geometry object.
+  /** Used convert the location into a geometry object.
    *  @return Returns a javaxt.geospatial.geometry.Geometry or a
    *  com.vividsolutions.jts.geom.Geometry, depending on which library is found
    *  in the classpath. If both libraries are present, will return a
@@ -87,25 +99,38 @@ public class Location {
 
         if (hasGeometry==null){
 
-            String nodeName = node.getNodeName().toLowerCase();
-            String nodeValue = Parser.getNodeValue(node).trim();
+            if (lat!=null && lon!=null){
+
+                String nodeName = "Point";
+                String nodeValue =
+                    "<gml:" + nodeName + ">"  +
+                    "<gml:coordinates cs=\" \" ts=\",\">" + lon + " " + lat +
+                    "</gml:coordinates>" +
+                    "</gml:" + nodeName + ">";
+                geometry = getGeometry(nodeName, nodeValue);
+            }
+            else{
+            
+                String nodeName = node.getNodeName().toLowerCase();
+                String nodeValue = Parser.getNodeValue(node).trim();
 
 
-            if (nodeName.equals("where") || nodeName.equals("georss:where")){
-                NodeList nodes = node.getChildNodes();
-                for (int j=0; j<nodes.getLength(); j++){
-                    node = nodes.item(j);
-                    if (node.getNodeType()==1){
-                        nodeName = node.getNodeName();
-                        if (isGeometryNode(nodeName.toLowerCase())){
-                            geometry = getGeometry(nodeName, Parser.getNodeValue(node));
-                            if (geometry!=null) break;
+                if (nodeName.equals("where") || nodeName.equals(georss + ":where")){
+                    NodeList nodes = node.getChildNodes();
+                    for (int j=0; j<nodes.getLength(); j++){
+                        node = nodes.item(j);
+                        if (node.getNodeType()==1){
+                            nodeName = node.getNodeName();
+                            if (isGeometryNode(nodeName.toLowerCase(), gml, georss)){
+                                geometry = getGeometry(nodeName, Parser.getNodeValue(node));
+                                if (geometry!=null) break;
+                            }
                         }
                     }
                 }
-            }
-            else if(isGeometryNode(nodeName)){
-                geometry = getGeometry(nodeName, nodeValue);
+                else if(isGeometryNode(nodeName, gml, georss)){
+                    geometry = getGeometry(nodeName, nodeValue);
+                }
             }
 
             hasGeometry = (geometry==null);
@@ -115,16 +140,38 @@ public class Location {
     }
 
 
+  //**************************************************************************
+  //** isLocationNode
+  //**************************************************************************
+  /**  Protected method used to help determine whether a node represents a
+   *   location.
+   */
+    protected static boolean isLocationNode(String nodeName, java.util.HashMap<String, String> namespaces){
+        String georss = namespaces.get("http://www.georss.org/georss");
+        if (georss==null) georss = "georss";
+
+        String gml = namespaces.get("http://www.opengis.net/gml");
+        if (gml==null) gml = "gml";
+
+        return (nodeName.equals("where") || nodeName.equals(georss + ":where") ||
+            isGeometryNode(nodeName, gml, georss));
+    }
 
 
-
-    private static boolean isGeometryNode(String nodeName){
+  //**************************************************************************
+  //** isGeometryNode
+  //**************************************************************************
+  /**  Private method used to determine whether a node represents a geometry.
+   *   @param gml GML NameSpace
+   *   @param georss GeoRSS NameSpace
+   */
+    private static boolean isGeometryNode(String nodeName, String gml, String georss){
         String namespace = null;
         if (nodeName.contains(":")){
             namespace = nodeName.substring(0, nodeName.lastIndexOf(":"));
             nodeName = nodeName.substring(nodeName.lastIndexOf(":")+1);
         }
-        if (namespace==null || namespace.equals("gml") || namespace.equals("georss")){
+        if (namespace==null || namespace.equals(gml) || namespace.equals(georss)){
             for (String geometryType : SupportedGeometryTypes){
                 if (nodeName.equalsIgnoreCase(geometryType)) return true;
             }
@@ -140,6 +187,9 @@ public class Location {
   //** getGeometry
   //**************************************************************************
   /**  Calls javaxt-gis or jts to try to parse location information.
+   *   @param nodeName XML node name (e.g. "gml:Point" or "Point"). This
+   *   parameter is required to instantiate the JTS Parser. Note that the
+   *   namespace is ignored.
    */
     private Object getGeometry(String nodeName, String nodeValue){
         if (nodeValue!=null){
@@ -149,7 +199,6 @@ public class Location {
         if (nodeValue==null) return null;
 
         try{
-//System.out.println(nodeValue);
           //Try to parse the geometry using the javaxt-gis library
             Class CoordinateParser = new ClassLoader("javaxt.geospatial.coordinate.Parser", "javaxt-gis.jar").load();
             java.lang.reflect.Constructor constructor = CoordinateParser.getDeclaredConstructor(new Class[] {String.class});

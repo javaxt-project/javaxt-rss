@@ -27,8 +27,20 @@ public class Item {
     private java.util.ArrayList<Media> media = new java.util.ArrayList<Media>();
 
 
-    /** Creates a new instance of Item */
-    protected Item(org.w3c.dom.Node node) {
+  //**************************************************************************
+  //** Constructor
+  //**************************************************************************
+  /** Creates a new instance of this class using an XML node. */
+
+    protected Item(org.w3c.dom.Node node, java.util.HashMap<String, String> namespaces) {
+
+        String mediaNS = namespaces.get("http://search.yahoo.com/mrss");
+        if (mediaNS==null) mediaNS = "media";
+
+        String geoNS = namespaces.get("http://www.w3.org/2003/01/geo/wgs84_pos#");
+        if (geoNS==null) geoNS = "geo";
+        
+
         nodeList = node.getChildNodes();
         String lat = null;
         String lon = null;
@@ -72,20 +84,17 @@ public class Item {
                     }
                 }
 
-                
-                else if (nodeName.startsWith("media:")){
+                else if (nodeName.equals(mediaNS + ":content")){
                     media.add(new Media(node));
                 }
 
-
-              //Parse Location Information (GeoRSS)
-                else if(Location.isLocationNode(nodeName)){
-                    location = new Location(node);
+                else if(Location.isLocationNode(nodeName, namespaces)){
+                    location = new Location(node, namespaces);
                 }
-                else if (nodeName.equals("lat") || nodeName.endsWith(":lat")){
+                else if (nodeName.equals("lat") || nodeName.equals(geoNS + ":lat")){
                     lat = nodeValue;
                 }
-                else if (nodeName.equals("long") || nodeName.endsWith(":long")){
+                else if (nodeName.equals("long") || nodeName.equals(geoNS + ":long")){
                     lon = nodeValue;
                 }
             }

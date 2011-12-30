@@ -4,7 +4,7 @@ package javaxt.rss;
 //**  Media Class
 //******************************************************************************
 /**
- *   Used to parse a media node associated with an RSS entry
+ *   Used to parse a media content node associated with an RSS entry
  *
  ******************************************************************************/
 
