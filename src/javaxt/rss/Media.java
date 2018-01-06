@@ -1,10 +1,10 @@
 package javaxt.rss;
 
 //******************************************************************************
-//**  Media Class
+//**  RSS Media
 //******************************************************************************
 /**
- *   Used to parse a media content node associated with an RSS entry
+ *   Used to represent media associated with an RSS Item.
  *
  ******************************************************************************/
 
@@ -15,13 +15,63 @@ public class Media {
     private String credit;
     private String description;
 
-
-
+    
   //**************************************************************************
   //** Constructor
   //**************************************************************************
-  /** Creates a new instance of Media. */
+    protected Media(org.w3c.dom.Node[] nodes){
+        
+        java.net.URL thumbnail = null;
+        String thumbnailType = null;
+        java.net.URL content = null;
+        String contentType = null;
+        
+        for (org.w3c.dom.Node node : nodes){
+            String nodeName = node.getNodeName();
+            if (nodeName.endsWith("credit")){
+                credit = Parser.getNodeValue(node).trim();
+            }
+            else if (nodeName.endsWith("description")){
+                description = Parser.getNodeValue(node).trim();
+            }
+            else if (nodeName.endsWith("thumbnail")){
+                String link = Parser.getAttributeValue(node,"url").trim();
+                if (link.length()>0){
+                    try{ 
+                        thumbnail = new java.net.URL(link); 
+                        thumbnailType = Parser.getAttributeValue(node,"type").trim();
+                    }
+                    catch(Exception e){}
+                }
+            }
+            else if (nodeName.endsWith("content")){
+                String link = Parser.getAttributeValue(node,"url").trim();
+                if (link.length()>0){
+                    try{ 
+                        content = new java.net.URL(link); 
+                        contentType = Parser.getAttributeValue(node,"type").trim();
+                    }
+                    catch(Exception e){}
+                }
+            }
+        }
+        
+        if (content!=null){ 
+            url = content;
+            type = contentType;
+        }
+        else{ 
+            url = thumbnail;
+            type = thumbnailType;
+        }
+    }
 
+    
+  //**************************************************************************
+  //** Constructor
+  //**************************************************************************
+  /** Used to parse a media content node associated with an RSS entry.
+   */
     protected Media(org.w3c.dom.Node node) {
         type = Parser.getAttributeValue(node,"type").trim();
 
@@ -46,6 +96,9 @@ public class Media {
             }
         }
     }
+    
+
+    
 
     public String getType(){ return type; }
     public String getCredit(){ return credit; }

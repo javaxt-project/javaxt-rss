@@ -26,8 +26,15 @@ public class Feed {
   //**************************************************************************
   //** Constructor
   //**************************************************************************
-  /** Creates a new instance of this class using an XML node. */
+    protected Feed(){}
+
     
+  //**************************************************************************
+  //** Constructor
+  //**************************************************************************
+  /** Creates a new instance of this class using an XML node from an RSS XML
+   *  document. 
+   */ 
     protected Feed(org.w3c.dom.Node node, java.util.HashMap<String, String> namespaces) {
         //java.util.ArrayList<Item> items = new java.util.ArrayList<Item>();
         NodeList nodeList = node.getChildNodes();
@@ -75,26 +82,33 @@ public class Feed {
                     catch(Exception e){
                     }
                 }
-            }
+            } 
         }
 
     }
     
+    
+  //**************************************************************************
+  //** getTitle
+  //**************************************************************************
     public String getTitle(){ return title; }
+    public void setTitle(String title){ this.title = title; }
+    
+    
+  //**************************************************************************
+  //** getDescription
+  //**************************************************************************
     public String getDescription(){ return description; }
+    public void setDescription(String description){ this.description = description; }
+    
+    
+  //**************************************************************************
+  //** getLink
+  //**************************************************************************
     public java.net.URL getLink(){ return link; }
+    public void setLink(java.net.URL link){ this.link = link; }
+    
 
-    
-  //**************************************************************************
-  //** getItems
-  //**************************************************************************
-  /** Returns a list of items found in an RSS feed. */
-    
-    public Item[] getItems(){ 
-        return items.toArray(new Item[items.size()]);
-    }
-
-    
   //**************************************************************************
   //** getLocation
   //**************************************************************************
@@ -105,9 +119,24 @@ public class Feed {
         return location;
     }
 
+    
+  //**************************************************************************
+  //** getLastUpdate
+  //**************************************************************************
     public java.util.Date getLastUpdate(){
         return lastUpdate;
     }
+    
+    
+  //**************************************************************************
+  //** getItems
+  //**************************************************************************
+  /** Returns a list of items found in an RSS feed. 
+   */ 
+    public Item[] getItems(){ 
+        return items.toArray(new Item[items.size()]);
+    }
+
     
     
   //**************************************************************************
@@ -120,7 +149,11 @@ public class Feed {
     public Integer getRefreshInterval(){
         return interval;
     }
+
     
+  //**************************************************************************
+  //** toString
+  //**************************************************************************
     public String toString(){
         StringBuffer out = new StringBuffer();
         String br = "\r\n";

@@ -12,26 +12,39 @@ import org.w3c.dom.*;
 public class Item {
     
     
-    private String title = "";
-    private String description = "";
+    private String title;
+    private String description;
     private String author = null;
     private String creator = null;
+    private String category = null;
     private java.net.URL link = null;
     private java.net.URL origLink = null; //<--FeedBurner
+    private java.util.Date date = null;
     private Location location = null;
     private NodeList nodeList = null;
-
-    private String pubDate = null;
-    private String dcDate = null;
-    
     private java.util.ArrayList<Media> media = new java.util.ArrayList<Media>();
 
+    
+  //**************************************************************************
+  //** Constructor
+  //**************************************************************************
+    protected Item(){}
+    
+  //**************************************************************************
+  //** Constructor
+  //**************************************************************************
+    public Item(String title, java.net.URL link, java.util.Date date){
+        this.title = title;
+        this.link = link;
+        this.date = date;
+    }
+    
 
   //**************************************************************************
   //** Constructor
   //**************************************************************************
-  /** Creates a new instance of this class using an XML node. */
-
+  /** Creates a new instance of this class using an XML node from an RSS Feed. 
+   */
     protected Item(org.w3c.dom.Node node, java.util.HashMap<String, String> namespaces) {
 
         String mediaNS = namespaces.get("http://search.yahoo.com/mrss");
@@ -42,13 +55,18 @@ public class Item {
         
 
         nodeList = node.getChildNodes();
+        String pubDate = null;
+        String dcDate = null;
         String lat = null;
         String lon = null;
+        java.util.ArrayList<org.w3c.dom.Node> mediaNodes = new java.util.ArrayList<org.w3c.dom.Node>();
+        
         for (int i=0; i<nodeList.getLength(); i++){
             node = nodeList.item(i);
             if (node.getNodeType()==1){
                 String nodeName = node.getNodeName().toLowerCase();
                 String nodeValue = Parser.getNodeValue(node).trim();
+                if (nodeValue.length()==0) nodeValue = null;
 
               //Parse Common Attributes
                 if (nodeName.equals("title")) title = nodeValue;
@@ -64,30 +82,35 @@ public class Item {
 
               //Parse Link
                 else if(nodeName.equals("link")){
-                    String url = nodeValue;
-                    if (url.length()==0){
-                      //get href attribute
-                        url = Parser.getAttributeValue(node,"href").trim();
-                    }
-                    if (url.length()>0){
-                       try{ link = new java.net.URL(url); }
-                       catch(Exception e){}
+                    if (nodeValue!=null){
+                        String url = nodeValue.replace("\"", "");
+                        if (url.length()==0){
+                          //get href attribute
+                            url = Parser.getAttributeValue(node,"href").trim();
+                        }
+                        if (url.length()>0){
+                           try{ link = new java.net.URL(url); }
+                           catch(Exception e){}
+                        }
                     }
                 }
 
               //Parse FeedBurner Link
                 else if(nodeName.equals("feedburner:origLink")){
-                    String url = nodeValue.trim();
-                    if (url.length()>0){
-                        try{ origLink = new java.net.URL(url); }
+                    if (nodeValue!=null){
+                        try{ origLink = new java.net.URL(nodeValue); }
                         catch(Exception e){}
                     }
                 }
-
-                else if (nodeName.equals(mediaNS + ":content")){
-                    media.add(new Media(node));
+                
+              //Enclosure (e.g. TASS News agency)
+                else if (nodeName.equals("enclosure")){
+                    addMedia(new Media(node));
                 }
-
+                else if (nodeName.equals("category")){
+                    category = nodeValue;
+                }
+                
                 else if(Location.isLocationNode(nodeName, namespaces)){
                     location = new Location(node, namespaces);
                 }
@@ -97,37 +120,136 @@ public class Item {
                 else if (nodeName.equals("long") || nodeName.equals(geoNS + ":long")){
                     lon = nodeValue;
                 }
+                else{
+                    
+                    if (nodeName.startsWith(mediaNS + ":")){
+                        mediaNodes.add(node);
+                    }
+                    
+                }
             }
         }
 
+        
+      //Parse date
+        String date = pubDate;
+        if (date==null || date.length()==0) date = dcDate;
+        if (date!=null && date.length()>0){
+            try{
+                this.date = Parser.getDate(date);
+            }
+            catch(java.text.ParseException e){
+            }
+        }
+        
+        
+      //Parse media nodes
+        if (!mediaNodes.isEmpty()){
+            
+          //Check if there are any content nodes and if those nodes have children (e.g. The Guardian News Feed)
+            for (org.w3c.dom.Node mediaNode : mediaNodes){
+                String nodeName = mediaNode.getNodeName().toLowerCase();
+                if (nodeName.equals(mediaNS + ":content")){
+
+                  
+                    org.w3c.dom.NodeList nodeList = mediaNode.getChildNodes();
+                    for (int i=0; i<nodeList.getLength(); i++){
+                        node = nodeList.item(i);
+                        if (node.getNodeType()==1){
+                            addMedia(new Media(mediaNode));
+                            break;
+                        }   
+                    }
+
+                }
+            }
+            
+            
+          //If none of the of the content nodes have children (standard use case)
+            if (media.isEmpty()){
+                addMedia(new Media(mediaNodes.toArray(new org.w3c.dom.Node[mediaNodes.size()])));
+            }
+        }
+
+        
+        
+      //Set location
         if (lat!=null && lon!=null){
             location = new Location(lat, lon);
         }
     }
 
-
+    
 
     
     
-    public String getTitle(){ return title; }
-    public String getDescription(){ return description; }
+  //**************************************************************************
+  //** getTitle
+  //**************************************************************************
+    public String getTitle(){
+        return title;
+    }
 
+    public void setTitle(String title){
+        this.title = title;
+    }
+
+    
+  //**************************************************************************
+  //** getDescription
+  //**************************************************************************
+    public String getDescription(){
+        return description;
+    }
+
+    public void setDescription(String description){
+        this.description = description;
+    }
+
+  //**************************************************************************
+  //** getAuthor
+  //**************************************************************************
     public String getAuthor(){
         if (author==null && creator!=null) return creator;
         return author;
     }
+    
+    public void setAuthor(String author){
+        this.author = author;
+    }
+    
+    
+  //**************************************************************************
+  //** getCategory
+  //**************************************************************************
+    public String getCategory(){
+        return category;
+    }
 
-
+    public void setCategory(String category){
+        this.category = category;
+    }
+    
+    
   //**************************************************************************
   //** getLink
   //**************************************************************************
-  /**  Returns a link/url associated with the current entry. Returns the
-   *   'feedburner:origLink' if found. Otherwise returns a url associated with
-   *   the 'link' node.
+  /** Returns a link/url associated with the current entry. Returns the
+   *  'feedburner:origLink' if found. Otherwise returns a url associated with
+   *  the 'link' node.
    */
     public java.net.URL getLink(){
         if (origLink!=null) return origLink;
         else return link;
+    }
+
+    
+  //**************************************************************************
+  //** setLink
+  //**************************************************************************
+    public void setLink(java.net.URL url){
+        origLink = null;
+        link = url;
     }
 
 
@@ -138,19 +260,26 @@ public class Item {
    *   pubDate if it exists. Otherwise, returns dc:date
    */
     public java.util.Date getDate(){
-        String date = pubDate;
-        if (date==null || date.length()==0) date = dcDate;
-        if (date!=null && date.length()>0){
-            try{
-                return Parser.getDate(date);
-            }
-            catch(java.text.ParseException e){
-            }
-        }
-        return null;
+        return date;
     }
 
 
+  //**************************************************************************
+  //** setDate
+  //**************************************************************************
+    public void setDate(java.util.Date date){
+        this.date = date;
+    }
+
+
+  //**************************************************************************
+  //** addMedia
+  //**************************************************************************
+    public void addMedia(Media media){
+        this.media.add(media);
+    }
+
+    
   //**************************************************************************
   //** getMedia
   //**************************************************************************
@@ -159,7 +288,6 @@ public class Item {
     public Media[] getMedia(){
         return media.toArray(new Media[media.size()]);
     }
-
 
 
   //**************************************************************************
@@ -201,5 +329,14 @@ public class Item {
         
         return out.toString();
     }
+    
+    
+//    public String toXML(){
+//        
+//        java.text.DateFormat formatter = new java.text.SimpleDateFormat(
+//        "EEE, dd MMM yyyy HH:mm:ss Z", java.util.Locale.ENGLISH);
+//        String d = formatter.format(date);
+//        
+//    }
 
 }
