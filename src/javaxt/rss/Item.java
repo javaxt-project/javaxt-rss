@@ -11,7 +11,6 @@ import org.w3c.dom.*;
 
 public class Item {
     
-    
     private String title;
     private String description;
     private String author = null;
@@ -28,8 +27,9 @@ public class Item {
   //**************************************************************************
   //** Constructor
   //**************************************************************************
-    protected Item(){}
-    
+    public Item(){}
+
+
   //**************************************************************************
   //** Constructor
   //**************************************************************************
@@ -179,10 +179,7 @@ public class Item {
         }
     }
 
-    
 
-    
-    
   //**************************************************************************
   //** getTitle
   //**************************************************************************
@@ -256,8 +253,8 @@ public class Item {
   //**************************************************************************
   //** getDate
   //**************************************************************************
-  /**  Return the date/time stamp associated with the current entry. Uses the
-   *   pubDate if it exists. Otherwise, returns dc:date
+  /** Return the date/time stamp associated with the current entry. Uses the
+   *  pubDate if it exists. Otherwise, returns dc:date
    */
     public java.util.Date getDate(){
         return date;
@@ -300,14 +297,21 @@ public class Item {
         return location;
     }
 
-
     
+  //**************************************************************************
+  //** getNodeList
+  //**************************************************************************
+  /** Returns the NodeList used to instantiate this class via the RSS Parser.
+   *  @deprecated This method will be removed in future releases.
+   */
     public NodeList getNodeList(){
         return nodeList;
     }
 
     
-    
+  //**************************************************************************
+  //** toString
+  //**************************************************************************
     public String toString(){
         StringBuffer out = new StringBuffer();
         String br = "\r\n";
@@ -330,13 +334,58 @@ public class Item {
         return out.toString();
     }
     
-    
-//    public String toXML(){
-//        
-//        java.text.DateFormat formatter = new java.text.SimpleDateFormat(
-//        "EEE, dd MMM yyyy HH:mm:ss Z", java.util.Locale.ENGLISH);
-//        String d = formatter.format(date);
-//        
-//    }
 
+  //**************************************************************************
+  //** toXML
+  //**************************************************************************
+  /** Returns an XML fragment used by the Feed class to generate an RSS/XML
+   *  document.
+   */
+    protected String toXML(){
+        StringBuffer str = new StringBuffer();
+
+        java.util.HashMap<String, Object> info = new java.util.HashMap<String, Object>();
+
+        String title = getTitle();
+        if (title!=null){
+            title = title.trim();
+            if (title.length()>0) info.put("title", title);
+        }
+
+        String desc = getDescription();
+        if (desc!=null){
+            desc = desc.trim();
+            if (desc.length()>0) info.put("description", desc);
+        }
+        
+        if (link!=null) info.put("link", link);
+        if (date!=null) info.put("pubDate", date);
+
+
+        if (!info.isEmpty()){
+            str.append("  <item>\n");
+            java.util.Iterator<String> it = info.keySet().iterator();
+            while (it.hasNext()){
+                String key = it.next();
+                Object val = info.get(key);
+                str.append("    <" + key + ">");
+                if (val instanceof String){
+                    str.append("<![CDATA[");
+                    str.append(val);
+                    str.append("]]>");
+                }
+                else if (val instanceof java.util.Date){
+                    String d = Feed.formatDate((java.util.Date) val);
+                    str.append(d);
+                }
+                else{
+                    str.append(val);
+                }
+                str.append("</" + key + ">\n");
+            }
+            str.append("  </item>\n");
+        }
+        
+        return str.toString();
+    }
 }

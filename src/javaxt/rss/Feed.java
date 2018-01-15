@@ -1,4 +1,8 @@
 package javaxt.rss;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.*;
 
 //******************************************************************************
@@ -26,7 +30,7 @@ public class Feed {
   //**************************************************************************
   //** Constructor
   //**************************************************************************
-    protected Feed(){}
+    public Feed(){}
 
     
   //**************************************************************************
@@ -123,9 +127,8 @@ public class Feed {
   //**************************************************************************
   //** getLastUpdate
   //**************************************************************************
-    public java.util.Date getLastUpdate(){
-        return lastUpdate;
-    }
+    public java.util.Date getLastUpdate(){ return lastUpdate; }
+    public void setLastUpdate(java.util.Date date){ this.lastUpdate = date; }
     
     
   //**************************************************************************
@@ -138,6 +141,15 @@ public class Feed {
     }
 
     
+  //**************************************************************************
+  //** addItem
+  //**************************************************************************
+  /** Used to add an RSS item to the Feed.
+   */ 
+    public void addItem(Item item){
+        items.add(item);
+    }
+    
     
   //**************************************************************************
   //** getRefreshInterval
@@ -149,7 +161,11 @@ public class Feed {
     public Integer getRefreshInterval(){
         return interval;
     }
-
+    
+    public void setRefreshInterval(Integer interval){
+        this.interval = interval;
+    }
+    
     
   //**************************************************************************
   //** toString
@@ -166,5 +182,56 @@ public class Feed {
         }
         return out.toString();
     }
+    
+    
+  //**************************************************************************
+  //** toXML
+  //**************************************************************************
+  /** Returns an RSS/XML document for this Feed.
+   */
+    public org.w3c.dom.Document toXML(){
+        StringBuffer str = new StringBuffer("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        str.append("<rss xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:content=\"http://purl.org/rss/1.0/modules/content/\" xmlns:atom=\"http://www.w3.org/2005/Atom\" version=\"2.0\" xmlns:media=\"http://search.yahoo.com/mrss/\">\n");
+        str.append("  <channel>\n");
+        str.append("  <title>" + getTitle() + "</title>\n");
+        str.append("  <link>" + getLink() + "</link>\n");
+        str.append("  <lastBuildDate>" + formatDate(lastUpdate==null ? new java.util.Date() : lastUpdate) + "</lastBuildDate>\n");
+        str.append("  <generator>JavaXT RSS</generator>\n");
+        str.append("  <ttl>" + (interval==null ? 15 : interval) + "</ttl>\n");
+        for (Item item : items){
+            str.append(item.toXML());
+        }
+        str.append("  </channel>\n");
+        str.append("</rss>");
 
+
+        return createDocument(str.toString());
+    }
+
+    
+  //**************************************************************************
+  //** createDocument
+  //**************************************************************************
+    private Document createDocument(String xml){
+        try{
+            DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = builderFactory.newDocumentBuilder();
+            InputStream is = new ByteArrayInputStream(xml.getBytes("UTF-8"));
+            return builder.parse(is);
+        }
+        catch(Exception e){
+            //e.printStackTrace();
+            return null;
+        }
+    }
+
+
+  //**************************************************************************
+  //** formatDate
+  //**************************************************************************
+    protected static String formatDate(java.util.Date date){
+        java.text.DateFormat formatter = new java.text.SimpleDateFormat(
+        "EEE, dd MMM yyyy HH:mm:ss zzz", java.util.Locale.US);
+        return formatter.format(date);
+    }
 }

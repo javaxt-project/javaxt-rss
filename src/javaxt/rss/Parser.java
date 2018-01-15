@@ -209,10 +209,10 @@ public class Parser {
 
     private static String[] SupportedFormats = new String[] {
 
-         "EEE, d MMM yy HH:mm:ss z",   // Mon, 07 Jun 76 13:02:09 EST
 
          "EEE, d MMM yyyy HH:mm:ss z",  // Mon, 7 Jun 1976 13:02:09 EST
          "EEE, dd MMM yyyy HH:mm:ss z", // Mon, 07 Jun 1976 13:02:09 EST
+         "EEE, dd MMM yyyy HH:mm:ss",   // Mon, 07 Jun 1976 13:02:09 EST
 
          "EEE MMM dd HH:mm:ss z yyyy",  // Mon Jun 07 13:02:09 EST 1976
          "EEE MMM d HH:mm:ss z yyyy",   // Mon Jun 7 13:02:09 EST 1976
@@ -220,9 +220,13 @@ public class Parser {
          "EEE MMM dd HH:mm:ss yyyy",    // Mon Jun 07 13:02:09 1976
          "EEE MMM d HH:mm:ss yyyy",     // Mon Jun 7 13:02:09 1976
 
+         "EEE MMM dd yyyy HH:mm:ss z",  //"Mon Jun 07 2013 00:00:00 GMT-0500 (Eastern Standard Time)"
+
+         "yyyy-MM-dd HH:mm:ss.SSS Z",   // 1976-06-07 13:02:36.000 America/New_York
          "yyyy-MM-dd HH:mm:ss.SSSZ",    // 1976-06-07 01:02:09.000-0500
          "yyyy-MM-dd HH:mm:ss.SSS",     // 1976-06-07 01:02:09.000
 
+         "yyyy-MM-dd HH:mm:ss Z",       // 1976-06-07 13:02:36 America/New_York
          "yyyy-MM-dd HH:mm:ssZ",        // 1976-06-07 13:02:36-0500
          "yyyy-MM-dd HH:mm:ss",         // 1976-06-07 01:02:09
 
@@ -239,7 +243,7 @@ public class Parser {
          "dd-MMM-yy h:mm:ss a",         // 07-Jun-76 1:02:09 PM
        //"d-MMM-yy h:mm:ss a",          // 7-Jun-76 1:02:09 PM
 
-
+         "yyyy-MM-dd HH:mm Z",          // 1976-06-07 13:02 America/New_York"
          "yyyy-MM-dd HH:mmZ",           // 1976-06-07T13:02-0500
          "yyyy-MM-dd HH:mm",            // 1976-06-07T13:02
          "yyyy-MM-dd",                  // 1976-06-07
@@ -253,7 +257,14 @@ public class Parser {
          "M/d/yy h:mm:ss a",            // 6/7/1976 1:02:09 PM
          "M/d/yy h:mm a",               // 6/7/1976 1:02 PM
 
+         "MM/dd/yy HH:mm:ss Z",         // 06/07/1976 13:02:09 America/New_York
+         "MM/dd/yy HH:mm:ss",           // 06/07/1976 13:02:09
+         "MM/dd/yy HH:mm Z",            // 06/07/1976 13:02 America/New_York
+         "MM/dd/yy HH:mm",              // 06/07/1976 13:02
+
+         "MM/dd/yyyy HH:mm:ss Z",       // 06/07/1976 13:02:09 America/New_York
          "MM/dd/yyyy HH:mm:ss",         // 06/07/1976 13:02:09
+         "MM/dd/yyyy HH:mm Z",          // 06/07/1976 13:02 America/New_York
          "MM/dd/yyyy HH:mm",            // 06/07/1976 13:02
 
          "M/d/yy",                      // 6/7/76
@@ -274,6 +285,15 @@ public class Parser {
     protected static java.util.Date getDate(String date) throws java.text.ParseException {
 
         try{
+          //Try to parse the date using the javaxt-core library
+            Class Date = new ClassLoader("javaxt.utils.Date", "javaxt-core.jar").load();
+            java.lang.reflect.Constructor constructor = Date.getDeclaredConstructor(new Class[] {String.class});
+            java.lang.reflect.Method method = Date.getDeclaredMethod("getDate");
+            Object instance = constructor.newInstance(new Object[] { date });
+            return (java.util.Date) method.invoke(instance);
+        }
+        catch(Exception e){
+            
 
           //Special Case: Java fails to parse the "T" in strings like
           //"1976-06-07T01:02:09.000" and "1976-06-07T13:02-0500"
@@ -285,23 +305,22 @@ public class Parser {
 
 
           //Loop through all known date formats and try to convert the string to a date
-            for (int i=0; i<SupportedFormats.length; i++){
+            for (String format : SupportedFormats){
 
               //Special Case: Java fails to parse the "Z" in "1976-06-07 00:00:00Z"
-                if (date.endsWith("Z") && SupportedFormats[i].endsWith("Z")){
+                if (date.endsWith("Z") && format.endsWith("Z")){
                     date = date.substring(0, date.length()-1) + "UTC";
                 }
 
                 try{
-                    return parseDate(date, SupportedFormats[i]);
+                    return parseDate(date, format);
                 }
-                catch(java.text.ParseException e){
+                catch(java.text.ParseException ex){
                 }
             }
 
         }
-        catch(Exception e){
-        }
+
 
       //If we're still here, throw an exception
         throw new java.text.ParseException("Failed to parse date: " + date, 0);
