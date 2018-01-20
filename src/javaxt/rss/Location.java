@@ -1,5 +1,6 @@
 package javaxt.rss;
 import org.w3c.dom.*;
+import java.math.BigDecimal;
 
 //******************************************************************************
 //**  Location Class
@@ -14,8 +15,8 @@ public class Location {
 
     private org.w3c.dom.Node node;
     private Object geometry;
-    private String lat;
-    private String lon;
+    private BigDecimal lat;
+    private BigDecimal lon;
     private Boolean hasGeometry = null; //Has 3 states: true, false, and null
 
     private static String[] SupportedGeometryTypes = new String[]{
@@ -51,11 +52,14 @@ public class Location {
   //**************************************************************************
   /** Creates a new instance of this class using a point. */
 
-    protected Location(String lat, String lon){
+    public Location(BigDecimal lat, BigDecimal lon){
         this.lat = lat;
         this.lon = lon;
     }
 
+    protected Location(String lat, String lon){
+        this(new BigDecimal(lat), new BigDecimal(lon));
+    }
 
     /*
     public String toGML(){

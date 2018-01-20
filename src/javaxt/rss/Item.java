@@ -13,14 +13,13 @@ public class Item {
     
     private String title;
     private String description;
-    private String author = null;
-    private String creator = null;
-    private String category = null;
-    private java.net.URL link = null;
-    private java.net.URL origLink = null; //<--FeedBurner
-    private java.util.Date date = null;
-    private Location location = null;
-    private NodeList nodeList = null;
+    private String author;
+    private String creator;
+    private String category;
+    private java.net.URL link;
+    private java.net.URL origLink; //<--FeedBurner
+    private java.util.Date date;
+    private Location location;
     private java.util.ArrayList<Media> media = new java.util.ArrayList<Media>();
 
     
@@ -45,7 +44,7 @@ public class Item {
   //**************************************************************************
   /** Creates a new instance of this class using an XML node from an RSS Feed. 
    */
-    protected Item(org.w3c.dom.Node node, java.util.HashMap<String, String> namespaces) {
+    protected Item(Node item, java.util.HashMap<String, String> namespaces) {
 
         String mediaNS = namespaces.get("http://search.yahoo.com/mrss");
         if (mediaNS==null) mediaNS = "media";
@@ -54,15 +53,23 @@ public class Item {
         if (geoNS==null) geoNS = "geo";
         
 
-        nodeList = node.getChildNodes();
         String pubDate = null;
         String dcDate = null;
+        String updated = null;
+        
+        String description = null;
+        String subtitle = null;
+        String summary = null;
+        
         String lat = null;
         String lon = null;
-        java.util.ArrayList<org.w3c.dom.Node> mediaNodes = new java.util.ArrayList<org.w3c.dom.Node>();
         
+        java.util.ArrayList<Node> mediaNodes = new java.util.ArrayList<Node>();
+        
+        
+        NodeList nodeList = item.getChildNodes();
         for (int i=0; i<nodeList.getLength(); i++){
-            node = nodeList.item(i);
+            Node node = nodeList.item(i);
             if (node.getNodeType()==1){
                 String nodeName = node.getNodeName().toLowerCase();
                 String nodeValue = Parser.getNodeValue(node).trim();
@@ -72,26 +79,30 @@ public class Item {
                 if (nodeName.equals("title")) title = nodeValue;
                 else if (nodeName.equals("author")) author = nodeValue;
                 else if (nodeName.endsWith("creator")) creator = nodeValue;
+                
                 else if (nodeName.equalsIgnoreCase("pubDate")) pubDate = nodeValue;
                 else if (nodeName.equalsIgnoreCase("dc:date")) dcDate = nodeValue;
-                else if(nodeName.equals("description") || nodeName.equals("subtitle")){
-                    if (description==null || description.length()==0){
-                        description = nodeValue;
-                    }
-                }
+                else if (nodeName.equalsIgnoreCase("updated")) updated = nodeValue;
+                
+                else if (nodeName.endsWith("description")) description = nodeValue;
+                else if (nodeName.endsWith("subtitle")) subtitle = nodeValue;
+                else if (nodeName.endsWith("summary")) summary = nodeValue;
+                
 
               //Parse Link
                 else if(nodeName.equals("link")){
+                    String url = "";
                     if (nodeValue!=null){
-                        String url = nodeValue.replace("\"", "");
-                        if (url.length()==0){
-                          //get href attribute
-                            url = Parser.getAttributeValue(node,"href").trim();
-                        }
-                        if (url.length()>0){
-                           try{ link = new java.net.URL(url); }
-                           catch(Exception e){}
-                        }
+                        url = nodeValue.replace("\"", "").trim();
+                    }
+                    
+                    if (url.length()==0){
+                      //get href attribute
+                        url = Parser.getAttributeValue(node,"href").trim();
+                    }
+                    if (url.length()>0){
+                       try{ link = new java.net.URL(url); }
+                       catch(Exception e){}
                     }
                 }
 
@@ -131,9 +142,10 @@ public class Item {
         }
 
         
-      //Parse date
+      //Set date
         String date = pubDate;
         if (date==null || date.length()==0) date = dcDate;
+        if (date==null || date.length()==0) date = updated;
         if (date!=null && date.length()>0){
             try{
                 this.date = Parser.getDate(date);
@@ -143,18 +155,25 @@ public class Item {
         }
         
         
+      //Set description
+        String desc = description;
+        if (desc==null || desc.length()==0) desc = subtitle;
+        if (desc==null || desc.length()==0) desc = summary;
+        this.description = desc;
+        
+        
+        
       //Parse media nodes
         if (!mediaNodes.isEmpty()){
             
           //Check if there are any content nodes and if those nodes have children (e.g. The Guardian News Feed)
-            for (org.w3c.dom.Node mediaNode : mediaNodes){
+            for (Node mediaNode : mediaNodes){
                 String nodeName = mediaNode.getNodeName().toLowerCase();
                 if (nodeName.equals(mediaNS + ":content")){
 
-                  
-                    org.w3c.dom.NodeList nodeList = mediaNode.getChildNodes();
-                    for (int i=0; i<nodeList.getLength(); i++){
-                        node = nodeList.item(i);
+                    NodeList nodes = mediaNode.getChildNodes();
+                    for (int i=0; i<nodes.getLength(); i++){
+                        Node node = nodes.item(i);
                         if (node.getNodeType()==1){
                             addMedia(new Media(mediaNode));
                             break;
@@ -167,7 +186,7 @@ public class Item {
             
           //If none of the of the content nodes have children (standard use case)
             if (media.isEmpty()){
-                addMedia(new Media(mediaNodes.toArray(new org.w3c.dom.Node[mediaNodes.size()])));
+                addMedia(new Media(mediaNodes.toArray(new Node[mediaNodes.size()])));
             }
         }
 
@@ -296,16 +315,13 @@ public class Item {
     public Location getLocation(){
         return location;
     }
-
+    
     
   //**************************************************************************
-  //** getNodeList
+  //** setLocation
   //**************************************************************************
-  /** Returns the NodeList used to instantiate this class via the RSS Parser.
-   *  @deprecated This method will be removed in future releases.
-   */
-    public NodeList getNodeList(){
-        return nodeList;
+    public void setLocation(Location location){
+        this.location = location;
     }
 
     

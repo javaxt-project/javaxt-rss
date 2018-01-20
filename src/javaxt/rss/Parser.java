@@ -293,23 +293,49 @@ public class Parser {
             return (java.util.Date) method.invoke(instance);
         }
         catch(Exception e){
-            
-
-          //Special Case: Java fails to parse the "T" in strings like
-          //"1976-06-07T01:02:09.000" and "1976-06-07T13:02-0500"
-            if (date.length()>="1976-06-07T13:02".length()){
-                if (date.substring(10, 11).equalsIgnoreCase("T")){
-                    date = date.replace("T", " ");
-                }
-            }
 
 
           //Loop through all known date formats and try to convert the string to a date
             for (String format : SupportedFormats){
 
-              //Special Case: Java fails to parse the "Z" in "1976-06-07 00:00:00Z"
-                if (date.endsWith("Z") && format.endsWith("Z")){
-                    date = date.substring(0, date.length()-1) + "UTC";
+                if (format.endsWith("Z")){
+
+                    //Special Case: Java fails to parse the "T" in strings like
+                    //"1976-06-07T01:02:09.000" and "1976-06-07T13:02-0500"
+                    int idx = date.indexOf("T");
+                    if (idx==10 && format.startsWith("yyyy-MM-dd HH:mm")){
+                        date = date.substring(0, idx) + " " + date.substring(idx+1);
+                    }
+                    
+                    
+                    
+                    if (date.endsWith("Z") && date.length()==format.length()){
+                      //If the date literally ends with the letter "Z", then the
+                      //date is probably referencing "Zulu" timezone (i.e. UTC).
+                      //Example: "1976-06-07 00:00:00Z". Java doesn't understand
+                      //what the "Z" timezone is so we'll replace the "Z" with
+                      //"UTC".
+                        date = date.substring(0, date.length()-1) + "UTC";
+                    }
+                    else{
+
+                        
+                      //Check if the timezone offset is specified in "+/-HH:mm" 
+                      //format (e.g. "2018-01-17T01:00:35+07:00"). If so, update
+                      //the timezone offset by removing the colon. 
+                        if (date.length()>=format.length()){
+                            int len = format.length()-1;
+                            String tz = date.substring(len);
+                            if (tz.length()==6){
+                                String a = tz.substring(0,1);
+                                if ((a.equals("-") || a.equals("+")) && tz.indexOf(":")==3){
+                                    tz = tz.replace(":", "");
+                                    date = date.substring(0, len) + tz;
+                                }
+                            }
+                            
+                        }
+                    }
                 }
 
                 try{
